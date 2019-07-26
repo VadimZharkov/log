@@ -5,19 +5,19 @@ A simple logger where you can easily customize the output and format of the mess
 Usage example:
 
 ```java
-Log.d("Test1");
+Log.d("Test log %d", 1);
 ```
 This will produce the next output by default:
 
-25-07-19:14:19:952 [DEBUG] Main.java:main:16 - Test1
+26-07-19:10:08:203 (main:1) [DEBUG] Main:main:15 - Test log 1
 
 Or you can use custom log:
 ```java
 Log log = new Log();
 log.setOutput(System.out::println);
 log.setFormat((level, params, message) -> level + " - " + message);
-log.debug("Test2");
+log.debug("Test log 2");
 ```
 This will produce the output:
 
-DEBUG - Test2
+DEBUG - Test log 2

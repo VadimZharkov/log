@@ -12,21 +12,21 @@ import static com.vzharkov.log.Log.Level.*;
  *
  * Usage example:
  *
- *  Log.d("Test1");
+ *  Log.d("Test log %d", 1);
  *
  *  This will produce the next output by default:
- *  25-07-19:14:19:952 [DEBUG] Main.java:main:16 - Test1
+ *  26-07-19:10:08:203 (main:1) [DEBUG] Main:main:15 - Test log 1
  *
  *  Or you can use custom log:
  *
  *  Log log = new Log();
  *  log.setOutput(System.out::println);
  *  log.setFormat((level, params, message) -> level + " - " + message);
- *  log.debug("Test2");
+ *  log.debug("Test log 2");
  *
  *  This will produce the output:
- *  DEBUG - Test2
-  *
+ *  DEBUG - Test log 2
+ *
  * @author Vadim Zharkov
  */
 
@@ -45,16 +45,16 @@ public class Log {
         private final Date date;
         private final String threadName;
         private final long threadId;
-        private final String fileName;
+        private final String className;
         private final String methodName;
         private final int lineNumber;
 
         public Params(final Date date, final String threadName, final long threadId,
-                      final String fileName, final String methodName, final int lineNumber) {
+                      final String className, final String methodName, final int lineNumber) {
             this.date = date;
             this.threadName = threadName;
             this.threadId = threadId;
-            this.fileName = fileName;
+            this.className = className;
             this.methodName = methodName;
             this.lineNumber = lineNumber;
         }
@@ -62,7 +62,7 @@ public class Log {
         public Date getDate() { return date; }
         public String getThreadName() { return threadName; }
         public long getThreadId() { return threadId; }
-        public String getFileName() { return fileName; }
+        public String getClassName() { return className; }
         public String getMethodName() { return methodName; }
         public int getLineNumber() { return lineNumber; }
     }
@@ -87,10 +87,17 @@ public class Log {
 
     protected static final Consumer<String> defaultOutput = System.out::println;
 
-    protected static final Formatter defaultFormatter = (level, params, message) ->
-            new SimpleDateFormat("dd-MM-yy:HH:mm:SS").format(params.getDate()) +
-                    " [" + level.toString() + "] " + params.getFileName() +
-                    ":" + params.getMethodName() + ":" + params.getLineNumber() + " - " + message;
+    protected static final Formatter defaultFormatter = (level, params, message) -> {
+        StringBuilder builder = new StringBuilder(1000);
+        builder.append(new SimpleDateFormat("dd-MM-yy:HH:mm:SS").format(params.getDate())).append(" ")
+                .append("(").append(params.getThreadName()).append(":").append(params.getThreadId()).append(") ")
+                .append("[").append(level.toString()).append("] ")
+                .append(params.getClassName()).append(":").append(params.getMethodName()).append(":").append(params.getLineNumber())
+                .append(" - ").append(message)
+                .append("\n");
+
+        return builder.toString();
+    };
 
     private volatile Consumer<String> output;
     private volatile Formatter format;
@@ -192,8 +199,9 @@ public class Log {
 
         Params params;
         if (ste != null) {
-            params = new Params(date, threadName, threadId, ste.getFileName(),
-                    ste.getMethodName(), ste.getLineNumber());
+            final String fullClassName = ste.getClassName();
+            final String className = fullClassName.substring(fullClassName.lastIndexOf('.') + 1);
+            params = new Params(date, threadName, threadId, className, ste.getMethodName(), ste.getLineNumber());
         } else {
             params = new Params(date, threadName, threadId, "", "", -1);
         }
